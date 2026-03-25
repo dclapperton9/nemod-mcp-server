@@ -33,7 +33,7 @@ export function registerQueryRacingData(server, pool) {
     'query_racing_data',
     `Execute a custom SQL SELECT query against the nemodfacts racing statistics database (racestat_0010).
 
-TOOL MANDATE: This tool (query_racing_data) is the ONLY way to get racing data. There is NO other tool for ranking, stats, or wins. ALL racing questions must call this tool with a SQL query.
+TOOL MANDATE: This tool (query_racing_data) is the ONLY way to get racing data, INCLUDING results, rankings, schedules, and upcoming events. There is NO other tool for schedules. ALL racing questions must call this tool with a SQL query.
 
 STRICT RESPONSE PROTOCOL:
 - FINAL OUTPUT REQUIREMENT: You MUST call this tool and return the data. 
@@ -171,6 +171,14 @@ JOIN Drivers d ON r.IDdriver = d.IDdriver
 JOIN tracks  t ON r.IDtrack  = t.IDtrack
 GROUP BY d.IDdriver, t.IDtrack
 ORDER BY wins DESC LIMIT 10
+
+-- Upcoming races in a series (scheduled events):
+SELECT ra.date, ra.EventName, t.TrackName
+FROM races ra
+JOIN tracks t ON ra.IDtrack = t.IDtrack
+JOIN series s ON ra.IDseries = s.IDseries
+WHERE s.seriesname LIKE '%Super DIRTcar%' AND ra.date >= CURDATE()
+ORDER BY ra.date ASC LIMIT 10
 
 -- How many RACE EVENTS were held (use DISTINCT IDrace, NOT COUNT of results rows):
 SELECT COUNT(DISTINCT ra.IDrace) AS race_count
