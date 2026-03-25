@@ -36,9 +36,10 @@ export function registerQueryRacingData(server, pool) {
 TOOL MANDATE: This tool (query_racing_data) is the ONLY way to get racing data. There is NO other tool for ranking, stats, or wins. ALL racing questions must call this tool with a SQL query.
 
 STRICT RESPONSE PROTOCOL:
-- ANSWER ONLY with the requested data.
-- NEVER explain the SQL query or your internal reasoning.
-- NEVER provide Python code, snippets, or mention "MCP" or "Tools" in the final output.
+- EXECUTION MANDATE: You MUST call this tool and return the data. NEVER just provide the SQL query without executing it.
+- ANSWER ONLY with the requested data formatted clearly.
+- NEVER explain the SQL query or your internal reasoning in the final response.
+- NEVER provide SQL snippets or mention "sql_query" in the final output unless specifically asked for the query code.
 - NO NARRATION: Do not say "The tool returned..." or "I should report this...".
 - If data is empty, say "No information found in the database."
 
