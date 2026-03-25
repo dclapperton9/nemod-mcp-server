@@ -1,0 +1,23 @@
+{
+  "name": "nemod-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for nemodfacts.racestatcentral.com dirt track racing statistics database",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "sse": "node index.js --sse",
+    "dev": "node --watch index.js"
+  },
+  "keywords": ["mcp", "racing", "mysql", "dirt-track"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mysql2": "^3.11.5",
+    "zod": "^3.23.8"
+  }
+}
