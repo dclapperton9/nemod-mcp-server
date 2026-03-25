@@ -43,13 +43,13 @@ STRICT RESPONSE PROTOCOL:
 - If data is empty, say "No information found in the database."
 
 KEY TABLE SCHEMAS:
-- drivers: IDdriver, DriverName, FirstName, LastName, NickName, CarNumber, Hometown, dob (DATE, NOT 'DOB'), Active
+- Drivers: IDdriver, DriverName, FirstName, LastName, NickName, CarNumber, Hometown, dob (DATE, NOT 'DOB'), Active
 - results: IDresult, IDdriver, IDrace, IDseries, IDseason (INTEGER year e.g. 2024 — NOT a date, do NOT use YEAR() on it), IDtrack, FinishPos, StartPos, CarNum
 - races: IDrace, IDseries, IDseason, IDtrack, EventName, date, FieldSize, Laps, MoV
 - tracks: IDtrack, TrackName, Location, IDstate, surface, length, type
 - series: IDseries, seriesname
-- points: IDpoints, IDdriver, IDseries, IDtrack, Pos, Points, IDseason, SB
-- driverstats: IDdriver, ELO, CELO
+- Points: IDpoints, IDdriver, IDseries, IDtrack, Pos, Points, IDseason, SB
+- DriverStats: IDdriver, ELO, CELO
 
 STATE ID MAPPING (Resolve IDstate to Name):
 1: NY, 2: PA, 3: QC, 4: ON, 5: NJ, 6: OH, 7: DE, 8: NC, 9: FL, 10: VT, 11: GA, 12: MD, 13: MI, 14: WV, 15: VA, 16: NH, 17: LA, 18: SC, 19: TX, 20: TN, 21: AR, 22: CT
@@ -85,7 +85,7 @@ SELECT d.DriverName,
        COUNT(r.IDresult)    AS starts,
        SUM(r.FinishPos = 1) AS wins
 FROM results r
-JOIN drivers d ON r.IDdriver = d.IDdriver
+JOIN Drivers d ON r.IDdriver = d.IDdriver
 JOIN tracks  t ON r.IDtrack  = t.IDtrack
 WHERE t.TrackName LIKE '%Afton%'
 GROUP BY d.IDdriver ORDER BY wins DESC LIMIT 10
@@ -97,7 +97,7 @@ SELECT d.DriverName,
        SUM(r.FinishPos <= 5)   AS top5s,
        SUM(r.FinishPos = 1)    AS wins
 FROM results r
-JOIN drivers d ON r.IDdriver = d.IDdriver
+JOIN Drivers d ON r.IDdriver = d.IDdriver
 JOIN tracks  t ON r.IDtrack  = t.IDtrack
 WHERE t.TrackName LIKE '%Afton%'
 GROUP BY d.IDdriver ORDER BY top10s DESC LIMIT 10
@@ -115,7 +115,7 @@ SELECT DriverName, wins, starts, rank_pos FROM (
          SUM(r.FinishPos = 1) AS wins,
          RANK() OVER (ORDER BY SUM(r.FinishPos = 1) DESC) AS rank_pos
   FROM results r
-  JOIN drivers d ON r.IDdriver = d.IDdriver
+  JOIN Drivers d ON r.IDdriver = d.IDdriver
   JOIN tracks  t ON r.IDtrack  = t.IDtrack
   WHERE t.TrackName LIKE '%Outlaw Speedway%'
   GROUP BY d.IDdriver
@@ -129,13 +129,13 @@ SELECT d.DriverName,
        SUM(r.FinishPos = 1)   AS wins,
        SUM(r.FinishPos <= 5)  AS top5s,
        SUM(r.FinishPos <= 10) AS top10s
-FROM drivers d LEFT JOIN results r ON d.IDdriver = r.IDdriver
+FROM Drivers d LEFT JOIN results r ON d.IDdriver = r.IDdriver
 WHERE d.DriverName LIKE '%Sheppard%' GROUP BY d.IDdriver
 
 -- Driver age (use TIMESTAMPDIFF, NOT YEAR(dob)):
 SELECT d.DriverName, d.dob,
        TIMESTAMPDIFF(YEAR, d.dob, CURDATE()) AS current_age
-FROM drivers d
+FROM Drivers d
 WHERE d.DriverName LIKE '%Clapperton%'
 
 -- Season filter (IDseason is an INT, use = directly):
@@ -144,8 +144,8 @@ WHERE d.DriverName LIKE '%Clapperton%'
 
 -- Points Standings / Championship Winner (Ranked by Pos or Points):
 SELECT p.Pos, d.DriverName, p.Points, s.seriesname, t.TrackName
-FROM points p
-JOIN drivers d ON p.IDdriver = d.IDdriver
+FROM Points p
+JOIN Drivers d ON p.IDdriver = d.IDdriver
 LEFT JOIN series s ON p.IDseries = s.IDseries
 LEFT JOIN tracks t ON p.IDtrack = t.IDtrack
 WHERE p.IDseason = 2023 AND (s.seriesname LIKE '%Super DIRTcar%' OR t.TrackName LIKE '%Fonda%')
@@ -156,7 +156,7 @@ SELECT s.seriesname,
        COUNT(r.IDresult)    AS starts,
        SUM(r.FinishPos = 1) AS wins
 FROM results r
-JOIN drivers d ON r.IDdriver = d.IDdriver
+JOIN Drivers d ON r.IDdriver = d.IDdriver
 JOIN series  s ON r.IDseries = s.IDseries
 WHERE d.DriverName = 'Brett Hearn'
 GROUP BY s.IDseries ORDER BY wins DESC LIMIT 10
@@ -165,7 +165,7 @@ GROUP BY s.IDseries ORDER BY wins DESC LIMIT 10
 SELECT d.DriverName, t.TrackName,
        SUM(r.FinishPos = 1) AS wins
 FROM results r
-JOIN drivers d ON r.IDdriver = d.IDdriver
+JOIN Drivers d ON r.IDdriver = d.IDdriver
 JOIN tracks  t ON r.IDtrack  = t.IDtrack
 GROUP BY d.IDdriver, t.IDtrack
 ORDER BY wins DESC LIMIT 10
@@ -184,9 +184,9 @@ GROUP BY d.IDdriver ORDER BY wins DESC LIMIT 10
 SELECT t.TrackName,
        SUM(r.FinishPos = 1) AS wins
 FROM results r
-JOIN drivers d ON r.IDdriver = d.IDdriver
+JOIN Drivers d ON r.IDdriver = d.IDdriver
 JOIN tracks  t ON r.IDtrack  = t.IDtrack
-WHERE d.IDdriver = (SELECT IDdriver FROM drivers WHERE DriverName LIKE '%Matt Sheppard%' LIMIT 1)
+WHERE d.IDdriver = (SELECT IDdriver FROM Drivers WHERE DriverName LIKE '%Matt Sheppard%' LIMIT 1)
   AND (t.TrackName LIKE '%Afton%' OR t.TrackName LIKE '%Outlaw%')
 GROUP BY t.IDtrack ORDER BY wins DESC
 
@@ -194,7 +194,7 @@ GROUP BY t.IDtrack ORDER BY wins DESC
 SELECT t.TrackName,
        COUNT(r.IDresult)    AS starts,
        SUM(r.FinishPos = 1) AS wins
-FROM drivers d
+FROM Drivers d
 JOIN results r ON d.IDdriver = r.IDdriver
 JOIN tracks t ON r.IDtrack = t.IDtrack
 WHERE d.DriverName = 'Matt Sheppard'
@@ -203,7 +203,7 @@ GROUP BY t.IDtrack ORDER BY wins DESC LIMIT 10
 -- Race results for a season:
 SELECT d.DriverName, r.FinishPos, t.TrackName, ra.date
 FROM results r
-JOIN drivers d ON r.IDdriver = d.IDdriver
+JOIN Drivers d ON r.IDdriver = d.IDdriver
 JOIN tracks t ON r.IDtrack = t.IDtrack
 JOIN races ra ON r.IDrace = ra.IDrace
 WHERE r.IDseason = 2025 ORDER BY ra.date
@@ -212,7 +212,7 @@ WHERE r.IDseason = 2025 ORDER BY ra.date
 SELECT ra.date, t.TrackName, s.seriesname, r.CarNum,
        r.FinishPos, 'Win' AS result_type
 FROM results r
-JOIN drivers d  ON r.IDdriver  = d.IDdriver
+JOIN Drivers d  ON r.IDdriver  = d.IDdriver
 JOIN races   ra ON r.IDrace    = ra.IDrace
 JOIN tracks  t  ON r.IDtrack   = t.IDtrack
 JOIN series  s  ON r.IDseries  = s.IDseries
@@ -223,7 +223,7 @@ ORDER BY ra.date DESC LIMIT 1
 SELECT ra.date, t.TrackName, s.seriesname, r.CarNum,
        r.FinishPos, 'First Win' AS result_type
 FROM results r
-JOIN drivers d  ON r.IDdriver  = d.IDdriver
+JOIN Drivers d  ON r.IDdriver  = d.IDdriver
 JOIN races   ra ON r.IDrace    = ra.IDrace
 JOIN tracks  t  ON r.IDtrack   = t.IDtrack
 JOIN series  s  ON r.IDseries  = s.IDseries
@@ -234,7 +234,7 @@ ORDER BY ra.date ASC LIMIT 1
 SELECT ra.date, t.TrackName, s.seriesname,
        r.FinishPos, 'Win' AS result_type
 FROM results r
-JOIN drivers d  ON r.IDdriver  = d.IDdriver
+JOIN Drivers d  ON r.IDdriver  = d.IDdriver
 JOIN races   ra ON r.IDrace    = ra.IDrace
 JOIN tracks  t  ON r.IDtrack   = t.IDtrack
 JOIN series  s  ON r.IDseries  = s.IDseries

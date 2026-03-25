@@ -88,7 +88,7 @@ export function registerGetDriverInfo(server, pool) {
           SUM(r.FinishPos <= 10)                     AS top10s,
           MIN(r.IDseason)                            AS first_season,
           MAX(r.IDseason)                            AS last_season
-        FROM drivers d
+        FROM Drivers d
         LEFT JOIN results r ON d.IDdriver = r.IDdriver
         WHERE d.DriverName LIKE ?
            OR CONCAT(d.FirstName, ' ', d.LastName) LIKE ?
