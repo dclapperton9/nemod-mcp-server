@@ -36,7 +36,9 @@ export function registerQueryRacingData(server, pool) {
 MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL OR JSON.
 - TODAY IS MARCH 25, 2026. "This year" = 2026.
 - MANDATORY EXECUTION: If you identify a SQL query, you MUST run it using this tool. 
-- ERROR PREVENTION: COLUMNS 'scheduled' AND 'completed' DO NOT EXIST. USE 'date' COMPARISONS.
+- ANTI-REFUSAL: NEVER say "I can't provide real-time data" or "I don't have access to the database." You DO have access via this tool.
+- NO TEMPLATES: Never provide SQL templates (e.g., "[IDdriver]") to the user. Always find the IDs herself by querying.
+- NO EXPLANATIONS: Do not explain HOW to run the query. RUN IT and provide the answer.
 - ACT AS A DATA ANALYST: Provide the result directly.
  
  SCHEMAS:
@@ -130,7 +132,23 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  GROUP BY d.IDdriver HAVING starts >= 20
  ORDER BY win_percentage DESC LIMIT 10
  
- -- Number of races completed this year:
+ -- Who has the longest winning streak at Fonda, and what was their fastest lap during that streak?
+WITH FondaRaces AS (
+  SELECT r.IDdriver, ra.date, ra.EventName, ra.FastLap, (r.FinishPos = 1) as is_hit,
+         ROW_NUMBER() OVER (PARTITION BY r.IDdriver ORDER BY ra.date, ra.EventName) - 
+         ROW_NUMBER() OVER (PARTITION BY r.IDdriver, (r.FinishPos = 1) ORDER BY ra.date, ra.EventName) as grp
+  FROM results r JOIN races ra ON r.IDrace = ra.IDrace JOIN tracks t ON ra.IDtrack = t.IDtrack
+  WHERE t.TrackName LIKE '%Fonda%'
+),
+Streaks AS (
+  SELECT IDdriver, COUNT(*) as streak_len, MIN(date) as start_date, MAX(date) as end_date, MIN(NULLIF(FastLap, 0)) as best_lap
+  FROM FondaRaces WHERE is_hit = 1 GROUP BY IDdriver, grp
+)
+SELECT d.DriverName, s.streak_len, s.start_date, s.end_date, s.best_lap
+FROM Streaks s JOIN Drivers d ON s.IDdriver = d.IDdriver
+ORDER BY streak_len DESC LIMIT 1
+
+-- Number of races completed this year:
  SELECT COUNT(DISTINCT ra.IDrace) as CompletedCount
  FROM races ra
  JOIN results r ON ra.IDrace = r.IDrace
