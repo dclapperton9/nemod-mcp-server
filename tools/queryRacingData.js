@@ -47,7 +47,8 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  - races: IDrace, IDseries, IDseason, IDtrack, EventName, date, Laps, Time (total time in seconds), FastLap (Fastest Race Lap seconds), FastLapDriver (ID), PoleTime (Fastest Qualifying Time seconds), PoleDriver (Fastest Qualifying Driver ID), MoV (Margin of Victory), FieldSize, SB (0=Big Block, 1=Small Block), NT (0=Standard, 1=RWYB, 2=Invitational, 3=Non-Winners, 4=Mixed), IDspecial
  - tracks: IDtrack, TrackName, Location, surface, length (miles), IDstate (1=NY, 2=PA, 3=QC, 7=DE, 9=FL, 11=ON, 12=NJ, 1->50=US/CAN)
  - series: IDseries, seriesname
- - Points: Pos, IDdriver, IDseason, IDseries, IDtrack, Points
+ - Points: IDpoints, IDdriver, IDseries, IDtrack, Pos, Points, IDseason, SB
+ - PointsCurrent: IDpoints, IDseries, SB, IDseason, IDdriver, Pos, Points, Bonus, DropPts
  - LapsLed: IDLapsLed, IDrace, IDdriver, Start, End, Total
  
  MANDATORY QUERY LOGIC:
@@ -62,6 +63,7 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  - "FASTEST RACE LAP OVERALL" → MIN(ra.FastLap) WHERE ra.FastLap > 0
  - "FASTEST AVERAGE LAP (WINNER)" → (ra.Time / ra.Laps) WHERE ra.Laps > 0
  - "LAPS LED" → SUM(ll.Total) FROM LapsLed ll
+ - "CHAMPIONSHIPS" → COUNT(*) FROM Points WHERE Pos = 1 (can be filtered by IDseries, IDtrack, or IDseason)
  
  STREAK CALCULATIONS (Gaps & Islands):
   - LONGEST STREAK: Use a CTE with \`ROW_NUMBER() - ROW_NUMBER(PARTITION BY is_hit)\`.
@@ -165,6 +167,13 @@ ORDER BY streak_len DESC LIMIT 1
  WHERE ra.IDseason = 2025
  GROUP BY ll.IDdriver ORDER BY total_laps_led DESC LIMIT 10
  
+ -- Who has the most championships of all time?
+ SELECT d.DriverName, COUNT(*) as titles
+ FROM Points p
+ JOIN Drivers d ON p.IDdriver = d.IDdriver
+ WHERE p.Pos = 1
+ GROUP BY p.IDdriver ORDER BY titles DESC LIMIT 10
+ 
  Returns up to 500 rows.`,
     QueryRacingDataSchema.shape,
     async ({ sql_query }) => {
@@ -205,7 +214,6 @@ ORDER BY streak_len DESC LIMIT 1
       // ── Execute ────────────────────────────────────────────────────────
       let conn;
       try {
-        console.log(`[query_racing_data] Executing SQL: ${safeQuery}`);
         conn = await pool.getConnection();
         const [rows] = await conn.query(safeQuery);
 
