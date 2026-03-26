@@ -205,6 +205,7 @@ ORDER BY streak_len DESC LIMIT 1
       // ── Execute ────────────────────────────────────────────────────────
       let conn;
       try {
+        console.log(`[query_racing_data] Executing SQL: ${safeQuery}`);
         conn = await pool.getConnection();
         const [rows] = await conn.query(safeQuery);
 
