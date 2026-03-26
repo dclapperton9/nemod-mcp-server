@@ -31,44 +31,20 @@ const QueryRacingDataSchema = z.object({
 export function registerQueryRacingData(server, pool) {
   server.tool(
     'query_racing_data',
-    `Execute a custom SQL SELECT query against the nemodfacts racing statistics database (racestat_0010).
+    `Execute a custom SQL SELECT query against the racing database (racestat_0010).
 
-TOOL MANDATE: This tool (query_racing_data) is the ONLY way to get racing data, INCLUDING results, rankings, schedules, and upcoming events. There is NO other tool for schedules. ALL racing questions must call this tool with a SQL query.
+MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL OR JSON.
+- TODAY IS MARCH 25, 2026. "This year" = 2026.
+- MANDATORY EXECUTION: If you identify a SQL query, you MUST run it using this tool. 
+- ERROR PREVENTION: COLUMNS 'scheduled' AND 'completed' DO NOT EXIST. USE 'date' COMPARISONS.
+- ACT AS A DATA ANALYST: Provide the result directly.
 
-STRICT RESPONSE PROTOCOL:
-- FINAL OUTPUT REQUIREMENT: You MUST call this tool and return the data. 
-- PROTOCOL VIOLATION: Providing ONLY text, SQL queries, or JSON snippets without calling this tool is a VIOLATION.
-- ANSWER ONLY with the requested data formatted clearly.
-- NEVER explain the SQL query or your internal reasoning in the final response.
-- NEVER provide SQL snippets or mention "sql_query" in the final output unless specifically asked for the query code.
-- NO NARRATION: Do not say "The tool returned..." or "I should report this...".
-- If data is empty, say "No information found in the database."
-
-KEY TABLE SCHEMAS:
-- Drivers: IDdriver, DriverName, FirstName, LastName, NickName, CarNumber, Hometown, dob (DATE, NOT 'DOB'), Active
-- results: IDresult, IDdriver, IDrace, IDseries, IDseason (INTEGER year e.g. 2024 — NOT a date, do NOT use YEAR() on it), IDtrack, FinishPos, StartPos, CarNum
-- races: IDrace, IDseries, IDseason, IDtrack, EventName, date, FieldSize, Laps, MoV
-- tracks: IDtrack, TrackName, Location, IDstate, surface, length, type
+SCHEMAS:
+- Drivers: IDdriver, DriverName, FirstName, LastName, Hometown, dob, Active
+- results: IDresult, IDdriver, IDrace, IDseason (year), IDtrack, FinishPos
+- races: IDrace, IDseries, IDseason, IDtrack, EventName, date, Laps
+- tracks: IDtrack, TrackName, Location, IDstate (1=NY, 2=PA, 3=QC, 7=DE, 9=FL)
 - series: IDseries, seriesname
-- Points: IDpoints, IDdriver, IDseries, IDtrack, Pos, Points, IDseason, SB
-- DriverStats: IDdriver, ELO, CELO
-
-STATE ID MAPPING (Resolve IDstate to Name):
-1: NY, 2: PA, 3: QC, 4: ON, 5: NJ, 6: OH, 7: DE, 8: NC, 9: FL, 10: VT, 11: GA, 12: MD, 13: MI, 14: WV, 15: VA, 16: NH, 17: LA, 18: SC, 19: TX, 20: TN, 21: AR, 22: CT
-
-TEMPORAL CONTEXT (Critical):
-- TODAY IS March 25, 2026.
-- "This year" or "This season" ALWAYS refers to IDseason = 2026.
-- "Scheduled Races" / "Upcoming Races" = races with date >= '2026-03-25'. Query the 'races' table DIRECTLY (do NOT join results).
-- "Completed Races" / "Past Races" = races with date < '2026-03-25'. Join 'races' with 'results'.
-
-STRICT GROUNDING MANDATE: 
-1. ONLY report data that is explicitly returned in the JSON output from this tool. 
-2. If the tool returns NO data, say "No information found in the database."
-3. NEVER use your internal training knowledge to "fill in" names of tracks, series, or dates that are not in the database results.
-4. If a session is missing a TrackName or seriesname, say "Unknown" rather than making one up.
-
-COUNTING RULES (critical):
 - "How many RACES were held/completed?" → COUNT(DISTINCT ra.IDrace) FROM races ra JOIN results r ON ra.IDrace = r.IDrace WHERE ra.date < CURDATE()
 - "How many RACES are scheduled/remaining?" → COUNT(DISTINCT IDrace) FROM races WHERE date >= CURDATE()
 - "How many total races in [Year]?" → COUNT(DISTINCT IDrace) FROM races WHERE IDseason = [Year]
