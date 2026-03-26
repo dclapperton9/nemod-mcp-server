@@ -44,7 +44,7 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  SCHEMAS:
  - Drivers: IDdriver, DriverName, FirstName, LastName, Hometown, dob, Active
  - results: IDresult, IDdriver, IDrace, IDseason, IDtrack, FinishPos, StartPos
- - races: IDrace, IDseries, IDseason, IDtrack, EventName, date, Laps, Time (total time in seconds), FastLap (seconds), FastLapDriver (ID), PoleTime (seconds), PoleDriver (ID), MoV (Margin of Victory), FieldSize, SB (0=Big Block, 1=Small Block), NT (0=Standard, 1=RWYB, 2=Invitational, 3=Non-Winners, 4=Mixed), IDspecial
+ - races: IDrace, IDseries, IDseason, IDtrack, EventName, date, Laps, Time (total time in seconds), FastLap (Fastest Race Lap seconds), FastLapDriver (ID), PoleTime (Fastest Qualifying Time seconds), PoleDriver (Fastest Qualifying Driver ID), MoV (Margin of Victory), FieldSize, SB (0=Big Block, 1=Small Block), NT (0=Standard, 1=RWYB, 2=Invitational, 3=Non-Winners, 4=Mixed), IDspecial
  - tracks: IDtrack, TrackName, Location, surface, length (miles), IDstate (1=NY, 2=PA, 3=QC, 7=DE, 9=FL, 11=ON, 12=NJ, 1->50=US/CAN)
  - series: IDseries, seriesname
  - Points: Pos, IDdriver, IDseason, IDseries, IDtrack, Points
@@ -53,12 +53,12 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  - "How many RACES were held/completed?" → COUNT(DISTINCT ra.IDrace) FROM races ra JOIN results r ON ra.IDrace = r.IDrace WHERE ra.date < CURDATE()
  - "How many RACES are scheduled/remaining?" → COUNT(DISTINCT IDrace) FROM races WHERE date >= CURDATE()
  - "WINS" → SUM(r.FinishPos = 1)
- - "POLE WINS" → COUNT(*) FROM races WHERE PoleDriver = d.IDdriver
- - "FAST LAPS" → COUNT(*) FROM races WHERE FastLapDriver = d.IDdriver
+ - "FASTEST QUALIFYING LAP WINS" → COUNT(*) FROM races WHERE PoleDriver = d.IDdriver
+ - "FASTEST RACE LAPS" → COUNT(*) FROM races WHERE FastLapDriver = d.IDdriver
  - "POSITIONS GAINED (HARD CHARGER)" → (r.StartPos - r.FinishPos)
  - "AVG FINISH" → AVG(r.FinishPos) WHERE r.FinishPos > 0
  - "AVERAGE FIELD SIZE" → AVG(ra.FieldSize)
- - "FASTEST LAP OVERALL" → MIN(ra.FastLap) WHERE ra.FastLap > 0
+ - "FASTEST RACE LAP OVERALL" → MIN(ra.FastLap) WHERE ra.FastLap > 0
  - "FASTEST AVERAGE LAP (WINNER)" → (ra.Time / ra.Laps) WHERE ra.Laps > 0
  
  STREAK CALCULATIONS (Gaps & Islands):
@@ -97,7 +97,7 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  ) t
  WHERE broken = 0
  
- -- Who has the most Pole Wins at Afton?
+ -- Who has the most Fastest Qualifying Lap wins at Afton?
  SELECT d.DriverName, COUNT(ra.IDrace) as poles
  FROM races ra
  JOIN Drivers d ON ra.PoleDriver = d.IDdriver
@@ -105,7 +105,7 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  WHERE t.TrackName LIKE '%Afton%'
  GROUP BY d.IDdriver ORDER BY poles DESC LIMIT 10
  
- -- Track Record (Fastest Lap ever at a track):
+ -- Track Record (Fastest Race Lap ever at a track):
  SELECT ra.date, d.DriverName, ra.FastLap, ra.EventName
  FROM races ra
  JOIN Drivers d ON ra.FastLapDriver = d.IDdriver
@@ -132,7 +132,7 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  GROUP BY d.IDdriver HAVING starts >= 20
  ORDER BY win_percentage DESC LIMIT 10
  
- -- Who has the longest winning streak at Fonda, and what was their fastest lap during that streak?
+ -- Who has the longest winning streak at Fonda, and what was their fastest race lap during that streak?
 WITH FondaRaces AS (
   SELECT r.IDdriver, ra.date, ra.EventName, ra.FastLap, (r.FinishPos = 1) as is_hit,
          ROW_NUMBER() OVER (PARTITION BY r.IDdriver ORDER BY ra.date, ra.EventName) - 
