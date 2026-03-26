@@ -40,6 +40,7 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
 - NO TEMPLATES: Never provide SQL templates (e.g., "[IDdriver]") to the user. Always find the IDs herself by querying.
 - NO EXPLANATIONS: Do not explain HOW to run the query. RUN IT and provide the answer.
 - ACT AS A DATA ANALYST: Provide the result directly.
+- NEVER PROVIDE SQL: Do not show the SQL query to the user unless they specifically ask for it. Always just give the data.
  
  SCHEMAS:
  - Drivers: IDdriver, DriverName, FirstName, LastName, Hometown, dob, Active
@@ -63,7 +64,10 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  - "FASTEST RACE LAP OVERALL" → MIN(ra.FastLap) WHERE ra.FastLap > 0
  - "FASTEST AVERAGE LAP (WINNER)" → (ra.Time / ra.Laps) WHERE ra.Laps > 0
  - "LAPS LED" → SUM(ll.Total) FROM LapsLed ll
- - "CHAMPIONSHIPS" → COUNT(*) FROM Points WHERE Pos = 1 (can be filtered by IDseries, IDtrack, or IDseason)
+ - "CHAMPIONSHIPS" → COUNT(*) FROM Points WHERE Pos = 1
+     * NEVER SUM(p.Points). ALWAYS COUNT where Pos = 1.
+     * If a SERIES is mentioned, JOIN series s ON p.IDseries = s.IDseries.
+     * If a TRACK is mentioned, JOIN tracks t ON p.IDtrack = t.IDtrack.
  
  STREAK CALCULATIONS (Gaps & Islands):
   - LONGEST STREAK: Use a CTE with \`ROW_NUMBER() - ROW_NUMBER(PARTITION BY is_hit)\`.
@@ -173,6 +177,22 @@ ORDER BY streak_len DESC LIMIT 1
  JOIN Drivers d ON p.IDdriver = d.IDdriver
  WHERE p.Pos = 1
  GROUP BY p.IDdriver ORDER BY titles DESC LIMIT 10
+ 
+ -- How many Series Championships does Matt Sheppard have in the Super DIRTcar Series?
+ SELECT d.DriverName, COUNT(*) as titles
+ FROM Points p
+ JOIN Drivers d ON p.IDdriver = d.IDdriver
+ JOIN series s ON p.IDseries = s.IDseries
+ WHERE d.DriverName LIKE '%Matt Sheppard%' AND s.seriesname LIKE '%Super DIRTcar%' AND p.Pos = 1
+ GROUP BY d.IDdriver
+ 
+ -- Rank drivers by total Track Championships at Fonda:
+ SELECT d.DriverName, COUNT(*) as titles
+ FROM Points p
+ JOIN Drivers d ON p.IDdriver = d.IDdriver
+ JOIN tracks t ON p.IDtrack = t.IDtrack
+ WHERE t.TrackName LIKE '%Fonda%' AND p.Pos = 1
+ GROUP BY d.IDdriver ORDER BY titles DESC
  
  Returns up to 500 rows.`,
     QueryRacingDataSchema.shape,
