@@ -59,6 +59,10 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  - "FASTEST LAP OVERALL" → MIN(ra.FastLap) WHERE ra.FastLap > 0
  - "FASTEST AVERAGE LAP (WINNER)" → (ra.Time / ra.Laps) WHERE ra.Laps > 0
  
+ STREAK CALCULATIONS (Gaps & Islands):
+  - LONGEST STREAK: Use a CTE with \`ROW_NUMBER() - ROW_NUMBER(PARTITION BY is_hit)\`.
+  - CURRENT STREAK: Use \`SUM(CASE WHEN NOT is_hit THEN 1 ELSE 0 END) OVER (ORDER BY date DESC)\` and count where this sum is 0.
+ 
  CRITICAL RULES:
  - Always use table.column dot notation in SELECT and JOINs.
  - Join Drivers d ON r.IDdriver = d.IDdriver
@@ -67,6 +71,30 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  - Join races ra ON r.IDrace = ra.IDrace
  
  EXAMPLE QUERIES:
+ -- Longest Winning Streak ever (Global):
+ WITH HitGroups AS (
+   SELECT IDdriver, date, (FinishPos = 1) as is_hit,
+          ROW_NUMBER() OVER (PARTITION BY IDdriver ORDER BY date, EventName) - 
+          ROW_NUMBER() OVER (PARTITION BY IDdriver, (FinishPos = 1) ORDER BY date, EventName) as grp
+   FROM results r JOIN races ra ON r.IDrace = ra.IDrace
+ )
+ SELECT d.DriverName, COUNT(*) as streak_length, MIN(date) as start_date, MAX(date) as end_date
+ FROM HitGroups h JOIN Drivers d ON h.IDdriver = d.IDdriver
+ WHERE is_hit = 1 GROUP BY h.IDdriver, h.grp ORDER BY streak_length DESC LIMIT 10
+ 
+ -- Stewart Friesen's Current Top 10 Streak:
+ SELECT COUNT(*) as current_streak
+ FROM (
+     SELECT r.FinishPos, 
+            SUM(CASE WHEN r.FinishPos > 10 OR r.FinishPos = 0 THEN 1 ELSE 0 END) 
+            OVER (ORDER BY ra.date DESC, ra.EventName DESC) as broken
+     FROM results r
+     JOIN races ra ON r.IDrace = ra.IDrace
+     JOIN Drivers d ON r.IDdriver = d.IDdriver
+     WHERE d.DriverName LIKE '%Friesen%'
+ ) t
+ WHERE broken = 0
+ 
  -- Who has the most Pole Wins at Afton?
  SELECT d.DriverName, COUNT(ra.IDrace) as poles
  FROM races ra
@@ -92,13 +120,6 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  WHERE r.StartPos > 0 AND r.FinishPos > 0
  ORDER BY gained DESC LIMIT 10
  
- -- Average Field Size by Series in 2025:
- SELECT s.seriesname, AVG(ra.FieldSize) as avg_field
- FROM races ra
- JOIN series s ON ra.IDseries = s.IDseries
- WHERE ra.IDseason = 2025
- GROUP BY s.IDseries ORDER BY avg_field DESC
- 
  -- Driver efficiency (Wins per Start percentage):
  SELECT d.DriverName,
         COUNT(r.IDresult) as starts,
@@ -108,14 +129,6 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  JOIN Drivers d ON r.IDdriver = d.IDdriver
  GROUP BY d.IDdriver HAVING starts >= 20
  ORDER BY win_percentage DESC LIMIT 10
- 
- -- Upcoming races for a series:
- SELECT ra.date, t.TrackName, ra.EventName
- FROM races ra
- JOIN tracks t ON ra.IDtrack = t.IDtrack
- JOIN series s ON ra.IDseries = s.IDseries
- WHERE s.seriesname LIKE '%Super DIRTcar%' AND ra.date >= CURDATE()
- ORDER BY ra.date LIMIT 10
  
  -- Number of races completed this year:
  SELECT COUNT(DISTINCT ra.IDrace) as CompletedCount
