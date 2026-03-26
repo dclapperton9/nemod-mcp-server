@@ -48,6 +48,7 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  - tracks: IDtrack, TrackName, Location, surface, length (miles), IDstate (1=NY, 2=PA, 3=QC, 7=DE, 9=FL, 11=ON, 12=NJ, 1->50=US/CAN)
  - series: IDseries, seriesname
  - Points: Pos, IDdriver, IDseason, IDseries, IDtrack, Points
+ - LapsLed: IDLapsLed, IDrace, IDdriver, Start, End, Total
  
  MANDATORY QUERY LOGIC:
  - "How many RACES were held/completed?" → COUNT(DISTINCT ra.IDrace) FROM races ra JOIN results r ON ra.IDrace = r.IDrace WHERE ra.date < CURDATE()
@@ -60,6 +61,7 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  - "AVERAGE FIELD SIZE" → AVG(ra.FieldSize)
  - "FASTEST RACE LAP OVERALL" → MIN(ra.FastLap) WHERE ra.FastLap > 0
  - "FASTEST AVERAGE LAP (WINNER)" → (ra.Time / ra.Laps) WHERE ra.Laps > 0
+ - "LAPS LED" → SUM(ll.Total) FROM LapsLed ll
  
  STREAK CALCULATIONS (Gaps & Islands):
   - LONGEST STREAK: Use a CTE with \`ROW_NUMBER() - ROW_NUMBER(PARTITION BY is_hit)\`.
@@ -71,6 +73,7 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
  - Join tracks t ON r.IDtrack = t.IDtrack OR ra.IDtrack = t.IDtrack
  - Join series s ON r.IDseries = s.IDseries OR ra.IDseries = s.IDseries
  - Join races ra ON r.IDrace = ra.IDrace
+ - Join LapsLed ll ON r.IDrace = ll.IDrace AND r.IDdriver = ll.IDdriver
  
  EXAMPLE QUERIES:
  -- Longest Winning Streak ever (Global):
@@ -153,6 +156,14 @@ ORDER BY streak_len DESC LIMIT 1
  FROM races ra
  JOIN results r ON ra.IDrace = r.IDrace
  WHERE ra.IDseason = 2026 AND ra.date < CURDATE()
+ 
+ -- Who led the most laps in the 2025 season?
+ SELECT d.DriverName, SUM(ll.Total) as total_laps_led
+ FROM LapsLed ll
+ JOIN Drivers d ON ll.IDdriver = d.IDdriver
+ JOIN races ra ON ll.IDrace = ra.IDrace
+ WHERE ra.IDseason = 2025
+ GROUP BY ll.IDdriver ORDER BY total_laps_led DESC LIMIT 10
  
  Returns up to 500 rows.`,
     QueryRacingDataSchema.shape,
