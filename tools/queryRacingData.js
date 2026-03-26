@@ -56,6 +56,12 @@ KEY TABLE SCHEMAS:
 STATE ID MAPPING (Resolve IDstate to Name):
 1: NY, 2: PA, 3: QC, 4: ON, 5: NJ, 6: OH, 7: DE, 8: NC, 9: FL, 10: VT, 11: GA, 12: MD, 13: MI, 14: WV, 15: VA, 16: NH, 17: LA, 18: SC, 19: TX, 20: TN, 21: AR, 22: CT
 
+TEMPORAL CONTEXT (Critical):
+- TODAY IS March 25, 2026.
+- "This year" or "This season" ALWAYS refers to IDseason = 2026.
+- "Scheduled Races" / "Upcoming Races" = races with date >= '2026-03-25'. Query the 'races' table DIRECTLY (do NOT join results).
+- "Completed Races" / "Past Races" = races with date < '2026-03-25'. Join 'races' with 'results'.
+
 STRICT GROUNDING MANDATE: 
 1. ONLY report data that is explicitly returned in the JSON output from this tool. 
 2. If the tool returns NO data, say "No information found in the database."
@@ -63,10 +69,12 @@ STRICT GROUNDING MANDATE:
 4. If a session is missing a TrackName or seriesname, say "Unknown" rather than making one up.
 
 COUNTING RULES (critical):
-- "How many RACES were held?" → COUNT(DISTINCT ra.IDrace) from the races table  ← NOT COUNT(r.IDresult)
-- "How many DRIVERS entered?" → COUNT(DISTINCT r.IDdriver) from results
+- "How many RACES were held/completed?" → COUNT(DISTINCT ra.IDrace) FROM races ra JOIN results r ON ra.IDrace = r.IDrace WHERE ra.date < CURDATE()
+- "How many RACES are scheduled/remaining?" → COUNT(DISTINCT IDrace) FROM races WHERE date >= CURDATE()
+- "How many total races in [Year]?" → COUNT(DISTINCT IDrace) FROM races WHERE IDseason = [Year]
+- "How many DRIVERS entered?" → COUNT(DISTINCT r.IDdriver) FROM results
 - "How many RESULTS/ENTRIES?" → COUNT(r.IDresult)
-- Never use COUNT(r.IDresult) to answer a question about number of race events.
+- Never use COUNT(IDresult) to answer a question about number of race events.
 
 CRITICAL RULES:
 - Driver name = DriverName (NOT driver_name, full_name, or name)
@@ -172,13 +180,19 @@ JOIN tracks  t ON r.IDtrack  = t.IDtrack
 GROUP BY d.IDdriver, t.IDtrack
 ORDER BY wins DESC LIMIT 10
 
--- Upcoming races in a series (scheduled events):
-SELECT ra.date, ra.EventName, t.TrackName
+-- Upcoming races for a series:
+SELECT ra.date, t.TrackName, ra.EventName
 FROM races ra
 JOIN tracks t ON ra.IDtrack = t.IDtrack
 JOIN series s ON ra.IDseries = s.IDseries
 WHERE s.seriesname LIKE '%Super DIRTcar%' AND ra.date >= CURDATE()
-ORDER BY ra.date ASC LIMIT 10
+ORDER BY ra.date LIMIT 10;
+
+-- Number of races completed this year:
+SELECT COUNT(DISTINCT ra.IDrace) as CompletedCount
+FROM races ra
+JOIN results r ON ra.IDrace = r.IDrace
+WHERE ra.IDseason = 2026 AND ra.date < CURDATE();
 
 -- How many RACE EVENTS were held (use DISTINCT IDrace, NOT COUNT of results rows):
 SELECT COUNT(DISTINCT ra.IDrace) AS race_count
