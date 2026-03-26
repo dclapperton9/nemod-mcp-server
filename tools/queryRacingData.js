@@ -176,6 +176,7 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
       // ── Execute ────────────────────────────────────────────────────────
       let conn;
       try {
+        console.log(`[query_racing_data] Executing SQL: ${safeQuery}`);
         conn = await pool.getConnection();
         const [rows] = await conn.query(safeQuery);
 
