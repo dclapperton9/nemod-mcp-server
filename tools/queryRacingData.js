@@ -34,13 +34,14 @@ export function registerQueryRacingData(server, pool) {
     `Execute a custom SQL SELECT query against the racing database (racestat_0010).
 
 MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL OR JSON.
-- TODAY IS MARCH 25, 2026. "This year" = 2026.
+- TODAY IS CURRENT. "This year" = 2026.
 - MANDATORY EXECUTION: If you identify a SQL query, you MUST run it using this tool. 
 - ANTI-REFUSAL: NEVER say "I can't provide real-time data" or "I don't have access to the database." You DO have access via this tool.
 - NO TEMPLATES: Never provide SQL templates (e.g., "[IDdriver]") to the user. Always find the IDs herself by querying.
 - NO EXPLANATIONS: Do not explain HOW to run the query. RUN IT and provide the answer.
 - ACT AS A DATA ANALYST: Provide the result directly.
 - NEVER PROVIDE SQL: Do not show the SQL query to the user unless they specifically ask for it. Always just give the data.
+- NEVER RETURN RAW IDs: Never include raw database IDs (IDdriver, IDrace, IDtrack) in your final response. Always properly JOIN the `Drivers`, `tracks`, and `series` tables to fetch and output actual human-readable names.
  
  SCHEMAS:
  - Drivers: IDdriver, DriverName, FirstName, LastName, Hometown, dob, Active
@@ -193,6 +194,20 @@ ORDER BY streak_len DESC LIMIT 1
  JOIN tracks t ON p.IDtrack = t.IDtrack
  WHERE t.TrackName LIKE '%Fonda%' AND p.Pos = 1
  GROUP BY d.IDdriver ORDER BY titles DESC
+ 
+ -- Rank drivers by their total laps led in a decade (e.g., the 1990s):
+ SELECT d.DriverName, SUM(ll.Total) as total_laps_led
+ FROM LapsLed ll
+ JOIN Drivers d ON ll.IDdriver = d.IDdriver
+ JOIN races ra ON ll.IDrace = ra.IDrace
+ WHERE ra.IDseason BETWEEN 1990 AND 1999
+ GROUP BY d.IDdriver ORDER BY total_laps_led DESC LIMIT 10
+ 
+ -- What is the largest field size for a race at Fonda this year?
+ SELECT MAX(ra.FieldSize) as max_field
+ FROM races ra
+ JOIN tracks t ON ra.IDtrack = t.IDtrack
+ WHERE t.TrackName LIKE '%Fonda%' AND ra.IDseason = 2026
  
  Returns up to 500 rows.`,
     QueryRacingDataSchema.shape,
