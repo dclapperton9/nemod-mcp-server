@@ -84,8 +84,8 @@ export function registerGetDriverInfo(server, pool) {
           d.Active,
           COUNT(r.IDresult)                          AS total_starts,
           SUM(r.FinishPos = 1)                       AS wins,
-          SUM(r.FinishPos <= 5)                      AS top5s,
-          SUM(r.FinishPos <= 10)                     AS top10s,
+          SUM(r.FinishPos > 0 AND r.FinishPos <= 5)  AS top5s,
+          SUM(r.FinishPos > 0 AND r.FinishPos <= 10) AS top10s,
           MIN(r.IDseason)                            AS first_season,
           MAX(r.IDseason)                            AS last_season
         FROM Drivers d

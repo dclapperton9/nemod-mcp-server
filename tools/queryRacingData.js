@@ -41,6 +41,8 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
 - NO EXPLANATIONS: Do not explain HOW to run the query. RUN IT and provide the answer.
 - ACT AS A DATA ANALYST: Provide the result directly.
 - NEVER PROVIDE SQL: Do not show the SQL query to the user unless they specifically ask for it. Always just give the data.
+- MUST AGGREGATE IN SQL: NEVER use 'SELECT *' to count or sum rows manually. Since queries are capped at 500 rows, manual counting will be profoundly wrong. You MUST use SQL aggregate functions ('COUNT()', 'SUM()') to calculate stats directly in the database.
+- USE GET_DRIVER_INFO FOR BASIC STATS: If the user simply asks for the total wins, top 5s, top 10s, and starts for a specific individual driver, STRICTLY prefer using the 'get_driver_info' tool rather than running a custom query.
 - NEVER RETURN RAW IDs: Never include raw database IDs (IDdriver, IDrace, IDtrack) in your final response. Always properly JOIN the Drivers, tracks, and series tables to fetch and output actual human-readable names.
  
  SCHEMAS:
