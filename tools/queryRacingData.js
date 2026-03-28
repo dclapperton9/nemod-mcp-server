@@ -18,7 +18,7 @@ const QueryRacingDataSchema = z.object({
     .min(1, 'sql_query must not be empty')
     .describe(
       'A valid MySQL SELECT query to run against the racing statistics database. ' +
-      'Example: "SELECT * FROM drivers LIMIT 10"'
+      'Example: "SELECT * FROM Drivers LIMIT 10"'
     ),
 });
 
