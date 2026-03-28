@@ -71,6 +71,8 @@ export function registerGetDriverInfo(server, pool) {
       const searchParam = `%${driver_name}%`;
       const nameParts = driver_name.trim().split(' ');
       const potentialLastName = nameParts[nameParts.length - 1];
+      const potentialFirstName = nameParts.length > 1 ? nameParts[0] : '';
+      const firstParam = `%${potentialFirstName}%`;
 
       // Real schema query against racestat_0010
       const sql = `
@@ -95,7 +97,7 @@ export function registerGetDriverInfo(server, pool) {
         WHERE d.DriverName LIKE ?
            OR CONCAT(d.FirstName, ' ', d.LastName) LIKE ?
            OR d.NickName LIKE ?
-           OR SOUNDEX(d.LastName) = SOUNDEX(?)
+           OR (d.FirstName LIKE ? AND SOUNDEX(d.LastName) = SOUNDEX(?))
         GROUP BY d.IDdriver
         ORDER BY wins DESC
         LIMIT 10
@@ -105,7 +107,7 @@ export function registerGetDriverInfo(server, pool) {
       try {
         conn = await pool.getConnection();
         // Second argument is the parameters array → prepared statement
-        const [rows] = await conn.execute(sql, [searchParam, searchParam, searchParam, potentialLastName]);
+        const [rows] = await conn.execute(sql, [searchParam, searchParam, searchParam, firstParam, potentialLastName]);
 
         if (!Array.isArray(rows) || rows.length === 0) {
           return {
