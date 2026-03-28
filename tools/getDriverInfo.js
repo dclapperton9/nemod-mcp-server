@@ -69,6 +69,8 @@ export function registerGetDriverInfo(server, pool) {
       // so user-supplied strings can NEVER break out of the value context.
 
       const searchParam = `%${driver_name}%`;
+      const nameParts = driver_name.trim().split(' ');
+      const potentialLastName = nameParts[nameParts.length - 1];
 
       // Real schema query against racestat_0010
       const sql = `
@@ -92,6 +94,8 @@ export function registerGetDriverInfo(server, pool) {
         LEFT JOIN results r ON d.IDdriver = r.IDdriver
         WHERE d.DriverName LIKE ?
            OR CONCAT(d.FirstName, ' ', d.LastName) LIKE ?
+           OR d.NickName LIKE ?
+           OR SOUNDEX(d.LastName) = SOUNDEX(?)
         GROUP BY d.IDdriver
         ORDER BY wins DESC
         LIMIT 10
@@ -101,7 +105,7 @@ export function registerGetDriverInfo(server, pool) {
       try {
         conn = await pool.getConnection();
         // Second argument is the parameters array → prepared statement
-        const [rows] = await conn.execute(sql, [searchParam, searchParam]);
+        const [rows] = await conn.execute(sql, [searchParam, searchParam, searchParam, potentialLastName]);
 
         if (!Array.isArray(rows) || rows.length === 0) {
           return {
