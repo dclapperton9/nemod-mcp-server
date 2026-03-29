@@ -41,7 +41,8 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
 - NO EXPLANATIONS: Do not explain HOW to run the query. RUN IT and provide the answer.
 - ACT AS A DATA ANALYST: Provide the result directly.
 - NEVER PROVIDE SQL: Do not show the SQL query to the user unless they specifically ask for it. Always just give the data.
-- MUST AGGREGATE IN SQL: NEVER use 'SELECT *' to count or sum rows manually. Since queries are capped at 500 rows, manual counting will be profoundly wrong. You MUST use SQL aggregate functions ('COUNT()', 'SUM()') to calculate stats directly in the database.
+- MUST AGGREGATE IN SQL: NEVER use 'SELECT *' to count or sum rows manually. Since queries are capped at 50 rows, manual counting will be profoundly wrong. You MUST use SQL aggregate functions ('COUNT()', 'SUM()') to calculate stats directly in the database.
+- MINIMIZE OUTPUT ROWS: Always append 'LIMIT 10' or 'LIMIT 5' to your queries unless the user specifically asks for more. Do not return massive lists.
 - USE GET_DRIVER_INFO FOR BASIC STATS: If the user simply asks for the total wins, top 5s, top 10s, and starts for a specific individual driver, STRICTLY prefer using the 'get_driver_info' tool rather than running a custom query.
 - NAME MATCHING: When filtering by driver name in custom queries, NEVER use strict equality (=). You must ALWAYS use wildcard LIKE searches (e.g., 'd.DriverName LIKE \'%Matt%\' AND d.DriverName LIKE \'%Sheppard%\''). If you suspect a spelling error or nickname is being used, utilize 'd.NickName LIKE \'%Query%\'' or use MariaDB's SOUNDEX() function: 'SOUNDEX(d.LastName) = SOUNDEX(\'Shepard\')'.
 - NEVER RETURN RAW IDs: Never include raw database IDs (IDdriver, IDrace, IDtrack) in your final response. Always properly JOIN the Drivers, tracks, and series tables to fetch and output actual human-readable names.
@@ -213,7 +214,7 @@ ORDER BY streak_len DESC LIMIT 1
  JOIN tracks t ON ra.IDtrack = t.IDtrack
  WHERE t.TrackName LIKE '%Fonda%' AND ra.IDseason = 2026
  
- Returns up to 500 rows.`,
+ Returns up to 50 rows.`,
     QueryRacingDataSchema.shape,
     async ({ sql_query }) => {
       // ── Basic safety guard ──────────────────────────────────────────────
@@ -248,7 +249,7 @@ ORDER BY streak_len DESC LIMIT 1
       // ── Row limit safety ───────────────────────────────────────────────
       // Append LIMIT if the query doesn't already have one, to prevent OOM.
       const hasLimit = /\bLIMIT\b/i.test(sql_query);
-      const safeQuery = hasLimit ? sql_query : `${sql_query.trimEnd()} LIMIT 500`;
+      const safeQuery = hasLimit ? sql_query : `${sql_query.trimEnd()} LIMIT 50`;
 
       // ── Execute ────────────────────────────────────────────────────────
       let conn;
