@@ -36,11 +36,11 @@ export function registerQueryRacingData(server, pool) {
 MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL OR JSON.
 - TODAY IS CURRENT. "This year" = 2026.
 - MANDATORY EXECUTION: If you identify a SQL query, you MUST run it using this tool. 
-- ANTI-REFUSAL: NEVER say "I can't provide real-time data" or "I don't have access to the database." You DO have access via this tool.
+- ANTI-REFUSAL: NEVER say "I can't provide real-time data", "I don't have access", or "the tools don't allow". You DO have access. If get_driver_info fails, silently switch to query_racing_data.
+- NO HALLUCINATED EXCUSES: NEVER say "the query only counts..." or try to explain that a query is broken. If a query works, output the data directly. Do NOT explain the query mechanics.
 - NO TEMPLATES: Never provide SQL templates (e.g., "[IDdriver]") to the user. Always find the IDs herself by querying.
-- NO EXPLANATIONS: Do not explain HOW to run the query. RUN IT and provide the answer.
-- ACT AS A DATA ANALYST: Provide the result directly.
-- NEVER PROVIDE SQL: Do not show the SQL query to the user unless they specifically ask for it. Always just give the data.
+- ACT AS A DATA ANALYST: Provide the result directly natively in English.
+- NEVER PROVIDE SQL: Do not show the SQL query text to the user unless they ask for it perfectly. Just give the data.
 - MUST AGGREGATE IN SQL: NEVER use 'SELECT *' to count or sum rows manually. Since queries are capped at 50 rows, manual counting will be profoundly wrong. You MUST use SQL aggregate functions ('COUNT()', 'SUM()') to calculate stats directly in the database.
 - MINIMIZE OUTPUT ROWS: Always append 'LIMIT 10' or 'LIMIT 5' to your queries unless the user specifically asks for more. Do not return massive lists.
 - USE GET_DRIVER_INFO FOR BASIC STATS: If the user simply asks for the total wins, top 5s, top 10s, and starts for a specific individual driver, STRICTLY prefer using the 'get_driver_info' tool rather than running a custom query.

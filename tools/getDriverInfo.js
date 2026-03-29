@@ -33,9 +33,9 @@ const GetDriverInfoSchema = z.object({
 export function registerGetDriverInfo(server, pool) {
   server.tool(
     'get_driver_info',
-    'Look up a dirt track racing driver by name and return their statistics ' +
-    '(wins, starts, podiums, points, etc.) from the nemodfacts database. ' +
-    'Partial name matches are supported.',
+    'Look up a dirt track racing driver by name and return their basic statistics ' +
+    '(wins, starts, top 5s, top 10s, hometown) from the nemodfacts database. ' +
+    'Partial name matches work. If you need more complex stats (like wins at a specific track), DO NOT GIVE UP. Seamlessly use the query_racing_data tool instead.',
     GetDriverInfoSchema.shape,
     async ({ driver_name }) => {
       // ── Prepared statement — safe from SQL injection ───────────────────
