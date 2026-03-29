@@ -78,6 +78,7 @@ MANDATORY PROTOCOL: YOU MUST CALL THIS TOOL FOR ANY DATA QUERY. DO NOT SHOW SQL 
   - CURRENT STREAK: Use \`SUM(CASE WHEN NOT is_hit THEN 1 ELSE 0 END) OVER (ORDER BY date DESC)\` and count where this sum is 0.
  
  CRITICAL RULES:
+ - STRICT CASE SENSITIVITY: MariaDB on Linux is case-sensitive for table names. You MUST capitalize tables EXACTLY as shown in the schemas. Failing to capitalize 'Drivers', 'LapsLed', 'Points', or 'PointsCurrent' will crash the query.
  - Always use table.column dot notation in SELECT and JOINs.
  - Join Drivers d ON r.IDdriver = d.IDdriver
  - Join tracks t ON r.IDtrack = t.IDtrack OR ra.IDtrack = t.IDtrack
